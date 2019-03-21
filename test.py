@@ -1,6 +1,3 @@
-from pygame.locals import *
-import math, pygame, sys
-
 """
 Representing hex grid
  __    __    __
