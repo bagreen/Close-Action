@@ -9,26 +9,21 @@ Representing hex grid
 \__/  \__/  \__/    Odd  [5]
 /  \__/  \__/  \    Even [6]
 \__/  \__/  \__/    Odd  [7]
-
-
 Could also be done like:
 H H H H H H
  H H P H H
 H H H H H H
-
 [0, H, 0, H, 0, H, 0, H, 0, H, 0, H]
 [H, 0, H, 0, H, 0, H, 0, H, 0, H, 0]
 [0, H, 0, H, 0, P, 0, H, 0, H, 0, H]
 [H, 0, H, 0, H, 0, H, 0, H, 0, H, 0]
 [0, H, 0, H, 0, H, 0, H, 0, H, 0, H]
-
 above is two rows up
 upper left is one up, one left
 upper right is one up, one right
 lower left is one down, one left
 lower right is one down, one right
 below is two rows down
-
 wastes a bit of space but makes sense
 https://stackoverflow.com/questions/11373122/best-way-to-store-a-triangular-hexagonal-grid-in-python
 """
@@ -37,14 +32,13 @@ https://stackoverflow.com/questions/11373122/best-way-to-store-a-triangular-hexa
 Drawing hexagons
 https://www.redblobgames.com/grids/hexagons/
 Points are at angles of 0*, 60*, 120*, 180*, 240*, 300*
-
 size = length of one side
 width is 2 * size
 height is sqrt(3) * size
-
 horizontal distance between adjacent hexagon centers is width * 3/4
   vertical distance between adjacent hexagon centers is height
 """
+
 
 from pygame.locals import *
 import math, random, pygame, sys, time
@@ -64,7 +58,7 @@ COLOR_BLUE      = (  0,   0, 255)
 COLOR_CYAN      = (  0, 255, 255)
 COLOR_GRAY      = (100, 100, 100)
 COLOR_GREEN     = (  0, 255,   0)
-COLOR_HIGHLIGHT = (255, 255, 255)
+COLOR_HIGHLIGHT = (255, 0, 0)
 COLOR_NAVY_BLUE = (  0,   0, 128)
 COLOR_ORANGE    = (255, 165,   0)
 COLOR_PURPLE    = (128,   0, 128)
@@ -83,21 +77,6 @@ class Hexagon:
         self.radius = radius
         self.color = color
         self.drawing = drawing
-
-        # neighbors
-        # instead, calculate the distance between center and other hex's centers
-        # and if the distance is correct, they're neighbors?
-        # or, store them as hexs are stored and then check out their adjacent?
-            # probably most efficent
-        self.neighbors = {}
-        self.neighbors['upper_left'] = None
-        self.neighbors['upper_right'] = None
-        self.neighbors['left'] = None
-        self.neighbors['right'] = None
-        self.neighbors['lower_left'] = None
-        self.neighbors['lower_right'] = None
-
-
 
 def draw_hex(center_x, center_y, radius, color):
     points = []
@@ -133,6 +112,9 @@ def draw_board():
             HEXAGONS.append(new_hex)
 
 def get_hex_at_point(x, y):
+    if x < 0 or y < 0:
+        return None
+
     for hex in HEXAGONS:
         if hex.drawing.collidepoint(x, y):
             return hex
@@ -142,11 +124,37 @@ def get_neighbors(hex):
     neighbors = []
 
     # neighbors are +-height, +-height/2 +- side?
-    neighbors.append(get_hex_at_point(hex.center_x, hex.center_y))
+    upper = get_hex_at_point(hex.center_x, hex.center_y - math.sqrt(3) * hex.radius)
+    lower = get_hex_at_point(hex.center_x, hex.center_y + math.sqrt(3) * hex.radius)
+    upper_left = get_hex_at_point(hex.center_x - hex.radius * 1.5, hex.center_y - (math.sqrt(3) * hex.radius) / 2)
+    upper_right = get_hex_at_point(hex.center_x + hex.radius * 1.5, hex.center_y - (math.sqrt(3) * hex.radius) / 2)
+    lower_left = get_hex_at_point(hex.center_x - hex.radius * 1.5, hex.center_y + (math.sqrt(3) * hex.radius) / 2)
+    lower_right = get_hex_at_point(hex.center_x + hex.radius * 1.5, hex.center_y + (math.sqrt(3) * hex.radius) / 2)
+
+    if upper is not None:
+        neighbors.append(upper)
+    if lower is not None:
+        neighbors.append(lower)
+    if upper_left is not None:
+        neighbors.append(upper_left)
+    if upper_right is not None:
+        neighbors.append(upper_right)
+    if lower_left is not None:
+        neighbors.append(lower_left)
+    if lower_right is not None:
+        neighbors.append(lower_right)
+
+    return neighbors
 
 def highlight_hex(hex_hover):
     draw_hex(hex_hover.center_x, hex_hover.center_y, hex_hover.radius + 2, COLOR_HIGHLIGHT)
     #hex_hover.drawing = draw_hex(hex_hover.center_x, hex_hover.center_y, hex_hover.radius, hex_hover.color)
+
+def highlight_neighbor_hex(hex_hover):
+    neighbors = get_neighbors(hex_hover)
+
+    for neighbor in neighbors:
+        draw_hex(neighbor.center_x, neighbor.center_y, neighbor.radius + 2, COLOR_HIGHLIGHT)
 
 
 def main():
@@ -184,7 +192,7 @@ def main():
             hex_hover = get_hex_at_point(mouse_x, mouse_y)
 
             if hex_hover is not None:
-                highlight_hex(hex_hover)
+                highlight_neighbor_hex(hex_hover)
 
         fps_clock.tick(FPS)
         pygame.display.update()
